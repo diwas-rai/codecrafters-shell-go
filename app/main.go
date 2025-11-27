@@ -10,5 +10,9 @@ var _ = fmt.Fprint
 var _ = os.Stdout
 
 func main() {
+	var userCommand string
 	fmt.Fprint(os.Stdout, "$ ")
+	fmt.Scanln(&userCommand)
+	msg := fmt.Sprintf("%s: command not found", userCommand)
+	fmt.Fprint(os.Stdout, msg)
 }
