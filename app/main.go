@@ -19,8 +19,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, "Error reading input:", err)
 			os.Exit(1)
 		}
-		fmt.Println(command[:len(command)-1] + ": command not found")
-		if command == "exit" {
+		latestCommand := command[:len(command)-1]
+		fmt.Println(latestCommand + ": command not found")
+
+		if latestCommand == "exit\n" {
 			os.Exit(0)
 		}
 	}
