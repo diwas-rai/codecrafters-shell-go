@@ -20,10 +20,9 @@ func main() {
 			os.Exit(1)
 		}
 		latestCommand := command[:len(command)-1]
-		fmt.Println(latestCommand + ": command not found")
-
 		if latestCommand == "exit" {
 			os.Exit(0)
 		}
+		fmt.Println(latestCommand + ": command not found")
 	}
 }
