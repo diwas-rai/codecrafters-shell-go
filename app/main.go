@@ -152,45 +152,68 @@ func findBinInPath(bin string) (string, bool) {
 }
 
 func parseInput(input string) []string {
+	runes := []rune(input)
+
 	var args []string
-	var currentArg strings.Builder
+	var sb strings.Builder
 
-	inSingleQuote := false
-	inDoubleQuote := false
+	inSingle, inDouble := false, false
 
-	for _, r := range input {
-		switch r {
-		case '\n':
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+
+		if r == '\'' && !inDouble {
+			inSingle = !inSingle
 			continue
-		case '\'':
-			if inDoubleQuote {
-				currentArg.WriteRune(r)
-			} else {
-				inSingleQuote = !inSingleQuote
-			}
-		case '"':
-			if inSingleQuote {
-				currentArg.WriteRune(r)
-			} else {
-				inDoubleQuote = !inDoubleQuote
-			}
-		case ' ':
-			if !inSingleQuote && !inDoubleQuote {
-				if currentArg.Len() > 0 {
-					args = append(args, currentArg.String())
-					currentArg.Reset()
-				}
-			} else {
-				currentArg.WriteRune(r)
-			}
-		default:
-			currentArg.WriteRune(r)
 		}
+		if r == '"' && !inSingle {
+			inDouble = !inDouble
+			continue
+		}
+
+		if r == '\\' {
+			if inSingle {
+				sb.WriteRune(r)
+				continue
+			}
+
+			// Look ahead to the next character
+			if i+1 < len(runes) {
+				next := runes[i+1]
+
+				if inDouble {
+					if strings.ContainsRune("$`\"\\\n", next) {
+						sb.WriteRune(next)
+						i++
+					} else {
+						sb.WriteRune(r)
+					}
+				} else {
+					sb.WriteRune(next)
+					i++
+				}
+				continue
+			}
+		}
+
+		if r == ' ' && !inSingle && !inDouble {
+			if sb.Len() > 0 {
+				args = append(args, sb.String())
+				sb.Reset()
+			}
+			continue
+		}
+
+		if r == '\n' {
+			continue
+		}
+
+		sb.WriteRune(r)
 	}
 
-	// If there is a leftover argument at the end, add it
-	if currentArg.Len() > 0 {
-		args = append(args, currentArg.String())
+	// Append the final argument if exists
+	if sb.Len() > 0 {
+		args = append(args, sb.String())
 	}
 
 	return args
