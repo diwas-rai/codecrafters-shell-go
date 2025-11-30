@@ -15,7 +15,7 @@ import (
 var _ = fmt.Fprint
 var _ = os.Stdout
 
-var COMMAND_WORDS = []string{"echo", "exit", "type", "pwd"}
+var COMMAND_WORDS = []string{"echo", "exit", "type", "pwd", "cd"}
 
 func main() {
 	for {
@@ -42,6 +42,8 @@ func main() {
 			typeCommand(argv)
 		case "pwd":
 			pwdCommand()
+		case "cd":
+			cdCommand(argv)
 		default:
 			execute(argv)
 		}
@@ -112,6 +114,19 @@ func pwdCommand() {
 	}
 
 	fmt.Fprintf(os.Stdout, "%s\n", wd)
+}
+
+func cdCommand(argv []string) {
+	if len(argv) == 1 {
+		return
+	}
+
+	path := argv[1]
+
+	err := os.Chdir(path)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory\n", path)
+	}
 }
 
 func findBinInPath(bin string) (string, bool) {
