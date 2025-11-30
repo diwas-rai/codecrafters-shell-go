@@ -79,6 +79,18 @@ func main() {
 					}
 					i++
 				}
+			case "2>>":
+				if i+1 < len(argv) {
+					filePath := argv[i+1]
+					f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
+					} else {
+						stderr = f
+						filesToClose = append(filesToClose, f)
+					}
+					i++
+				}
 			default:
 				args = append(args, arg)
 			}
