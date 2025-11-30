@@ -122,8 +122,15 @@ func cdCommand(argv []string) {
 	}
 
 	path := argv[1]
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory\n", path)
+		return
+	}
 
-	err := os.Chdir(path)
+	path = strings.Replace(path, "~", home, 1)
+
+	err = os.Chdir(path)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory\n", path)
 	}
