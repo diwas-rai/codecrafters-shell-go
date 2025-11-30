@@ -27,7 +27,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		argv := strings.Fields(input)
+		argv := parseInput(input)
 		if len(argv) == 0 {
 			continue
 		}
@@ -149,4 +149,49 @@ func findBinInPath(bin string) (string, bool) {
 	}
 
 	return "", false
+}
+
+func parseInput(input string) []string {
+	var args []string
+	var currentArg strings.Builder
+
+	inSingleQuote := false
+	inDoubleQuote := false
+
+	for _, r := range input {
+		switch r {
+		case '\n':
+			continue
+		case '\'':
+			if inDoubleQuote {
+				currentArg.WriteRune(r)
+			} else {
+				inSingleQuote = !inSingleQuote
+			}
+		case '"':
+			if inSingleQuote {
+				currentArg.WriteRune(r)
+			} else {
+				inDoubleQuote = !inDoubleQuote
+			}
+		case ' ':
+			if !inSingleQuote && !inDoubleQuote {
+				if currentArg.Len() > 0 {
+					args = append(args, currentArg.String())
+					currentArg.Reset()
+				}
+			} else {
+				currentArg.WriteRune(r)
+			}
+		default:
+			currentArg.WriteRune(r)
+		}
+	}
+
+	// If there is a leftover argument at the end, add it
+	if currentArg.Len() > 0 {
+		args = append(args, currentArg.String())
+	}
+
+	return args
 }
