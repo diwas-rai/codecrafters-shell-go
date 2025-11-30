@@ -15,7 +15,7 @@ import (
 var _ = fmt.Fprint
 var _ = os.Stdout
 
-var COMMAND_WORDS = []string{"echo", "exit", "type"}
+var COMMAND_WORDS = []string{"echo", "exit", "type", "pwd"}
 
 func main() {
 	for {
@@ -28,6 +28,9 @@ func main() {
 		}
 
 		argv := strings.Fields(input)
+		if len(argv) == 0 {
+			continue
+		}
 		command := argv[0]
 
 		switch command {
@@ -37,6 +40,8 @@ func main() {
 			exitCommand(argv)
 		case "type":
 			typeCommand(argv)
+		case "pwd":
+			pwdCommand()
 		default:
 			execute(argv)
 		}
@@ -52,7 +57,7 @@ func exitCommand(argv []string) {
 
 	if len(argv) > 1 {
 		argCode, err := strconv.Atoi(argv[1])
-		if err != nil {
+		if err == nil {
 			code = argCode
 		}
 	}
@@ -98,6 +103,15 @@ func execute(argv []string) {
 	}
 
 	fmt.Fprintf(os.Stdout, "%s: command not found\n", fileName)
+}
+
+func pwdCommand() {
+	wd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+
+	fmt.Fprintf(os.Stdout, "%s\n", wd)
 }
 
 func findBinInPath(bin string) (string, bool) {
