@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -24,23 +26,70 @@ func main() {
 			os.Exit(1)
 		}
 
-		latestInput := strings.Split(input[:len(input)-1], " ")
-		command := latestInput[0]
-		args := latestInput[1:]
+		argv := strings.Fields(input)
+		command := argv[0]
 
 		switch command {
 		case "echo":
-			fmt.Println(strings.Join(args, " "))
+			echoCommand(argv)
 		case "exit":
-			os.Exit(0)
+			exitCommand(argv)
 		case "type":
-			if slices.Contains(COMMAND_WORDS, args[0]) {
-				fmt.Printf("%s is a shell builtin \n", args[0])
-			} else {
-				fmt.Println(args[0] + ": not found")
-			}
+			typeCommand(argv)
 		default:
 			fmt.Println(command + ": command not found")
 		}
 	}
+}
+
+func echoCommand(argv []string) {
+	fmt.Println(strings.Join(argv[1:], " "))
+}
+
+func exitCommand(argv []string) {
+	code := 0
+
+	if len(argv) > 1 {
+		argCode, err := strconv.Atoi(argv[1])
+		if err != nil {
+			code = argCode
+		}
+	}
+
+	os.Exit(code)
+}
+
+func typeCommand(argv []string) {
+	if len(argv) == 1 {
+		return
+	}
+
+	val := argv[1]
+
+	if slices.Contains(COMMAND_WORDS, val) {
+		fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", val)
+		return
+	}
+
+	if file, exists := findBinInPath(val); exists {
+		fmt.Fprintf(os.Stdout, "%s is %s\n", val, file)
+		return
+	}
+
+	fmt.Fprintf(os.Stdout, "%s: not found\n", val)
+}
+
+func findBinInPath(bin string) (string, bool) {
+	paths := os.Getenv("PATH")
+
+	for _, path := range strings.Split(paths, string(os.PathListSeparator)) {
+		file := filepath.Join(path, bin)
+		fileInfo, err := os.Stat(file)
+
+		if err == nil && !fileInfo.IsDir() && fileInfo.Mode().Perm()&0111 != 0 {
+			return file, true
+		}
+	}
+
+	return "", false
 }
