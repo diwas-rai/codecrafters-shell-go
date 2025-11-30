@@ -34,29 +34,50 @@ func main() {
 		}
 
 		var out io.Writer = os.Stdout
+		var stderr io.Writer = os.Stderr
 
-		for i, arg := range argv {
-			if arg == ">" || arg == "1>" {
+		var filesToClose []io.Closer
+
+		args := []string{}
+		for i := 0; i < len(argv); i++ {
+			arg := argv[i]
+
+			switch arg {
+			case ">", "1>":
 				if i+1 < len(argv) {
 					filePath := argv[i+1]
-
-					// Open file: Create if missing, Write Only, Truncate content
 					f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
-						argv = nil
-						break
+					} else {
+						out = f
+						filesToClose = append(filesToClose, f)
 					}
-					out = f
-
-					argv = append(argv[:i], argv[i+2:]...)
+					i++
 				}
-				break
+			case "2>":
+				if i+1 < len(argv) {
+					filePath := argv[i+1]
+					f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
+					} else {
+						stderr = f
+						filesToClose = append(filesToClose, f)
+					}
+					i++
+				}
+			default:
+				args = append(args, arg)
 			}
 		}
 
-		// If argv became empty or invalid due to redirection error
+		argv = args
+
 		if len(argv) == 0 {
+			for _, f := range filesToClose {
+				f.Close()
+			}
 			continue
 		}
 
@@ -74,7 +95,11 @@ func main() {
 		case "cd":
 			cdCommand(argv, out)
 		default:
-			execute(argv, out)
+			execute(argv, out, stderr)
+		}
+
+		for _, f := range filesToClose {
+			f.Close()
 		}
 	}
 }
@@ -114,7 +139,7 @@ func typeCommand(argv []string, out io.Writer) {
 	fmt.Fprintf(out, "%s: not found\n", val)
 }
 
-func execute(argv []string, out io.Writer) {
+func execute(argv []string, out io.Writer, stderr io.Writer) {
 	if len(argv) == 0 {
 		return
 	}
@@ -123,7 +148,8 @@ func execute(argv []string, out io.Writer) {
 
 	if _, exists := findBinInPath(fileName); exists {
 		cmd := exec.Command(fileName, argv[1:]...)
-		cmd.Stderr = os.Stderr
+
+		cmd.Stderr = stderr
 		cmd.Stdout = out
 
 		cmd.Run()
